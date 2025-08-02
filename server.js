@@ -1,49 +1,53 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const { Configuration, OpenAIApi } = require('openai');
+// server.js
+require("dotenv").config(); // 👈 Importa variables del .env
+
+const express = require("express");
+const cors = require("cors");
+const { Configuration, OpenAIApi } = require("openai");
 
 const app = express();
-const port = process.env.PORT || 10000;
+const port = 10000;
 
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 
+// Configura OpenAI usando variable de entorno
 const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY, // 👈 Segura
 });
+
 const openai = new OpenAIApi(configuration);
 
-app.post('/api/chat', async (req, res) => {
-  const { message } = req.body;
+// Ruta principal
+app.get("/", (req, res) => {
+  res.send("Servidor activo para Netvalle 🤖");
+});
 
-  if (!message) {
-    return res.status(400).json({ error: 'Falta el mensaje en el cuerpo de la solicitud.' });
-  }
+// Ruta para procesar peticiones a ChatGPT
+app.post("/api/chat", async (req, res) => {
+  const { message } = req.body;
 
   try {
     const completion = await openai.createChatCompletion({
-      model: "gpt-3.5-turbo", // Asegúrate de usar este modelo
+      model: "gpt-3.5-turbo", // o gpt-4 si tienes acceso
       messages: [{ role: "user", content: message }],
     });
 
     const data = completion.data;
+    console.log("🧠 OpenAI response:", data); // ✅ Te ayudará a debuggear
 
-    // 🔍 Para depuración en Render Logs
-    console.log("Respuesta de OpenAI:", JSON.stringify(data, null, 2));
-
-    if (data.choices && data.choices.length > 0) {
-      res.json({ response: data.choices[0].message.content });
-    } else {
-      res.status(500).json({ error: 'La respuesta de OpenAI no contiene resultados válidos.' });
-    }
-
+    res.json({
+      response: data.choices[0].message.content.trim(),
+    });
   } catch (error) {
-    console.error("Error al procesar la solicitud:", error.response?.data || error.message);
-    res.status(500).json({ error: "Respuesta inválida de OpenAI. Verifica tu API key o la solicitud enviada." });
+    console.error("❌ Error OpenAI:", error?.response?.data || error.message);
+    res.status(500).json({
+      error: "Respuesta inválida de OpenAI. Verifica tu API key o la solicitud enviada.",
+    });
   }
 });
 
+// Iniciar servidor
 app.listen(port, () => {
-  console.log(`Servidor corriendo en http://localhost:${port}`);
+  console.log(`🚀 Servidor corriendo en http://localhost:${port}`);
 });
