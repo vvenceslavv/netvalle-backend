@@ -1,53 +1,40 @@
-// server.js
-require("dotenv").config(); // 👈 Importa variables del .env
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import { Configuration, OpenAIApi } from 'openai';
 
-const express = require("express");
-const cors = require("cors");
-const { Configuration, OpenAIApi } = require("openai");
+dotenv.config(); // ✅ Cargar variables de entorno
 
 const app = express();
-const port = 10000;
-
 app.use(cors());
 app.use(express.json());
 
-// Configura OpenAI usando variable de entorno
 const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY, // 👈 Segura
+  apiKey: process.env.OPENAI_API_KEY
 });
-
 const openai = new OpenAIApi(configuration);
 
-// Ruta principal
-app.get("/", (req, res) => {
-  res.send("Servidor activo para Netvalle 🤖");
-});
-
-// Ruta para procesar peticiones a ChatGPT
-app.post("/api/chat", async (req, res) => {
+app.post('/api/chat', async (req, res) => {
   const { message } = req.body;
-
   try {
     const completion = await openai.createChatCompletion({
-      model: "gpt-3.5-turbo", // o gpt-4 si tienes acceso
-      messages: [{ role: "user", content: message }],
+      model: 'gpt-3.5-turbo',
+      messages: [{ role: 'user', content: message }],
     });
 
     const data = completion.data;
-    console.log("🧠 OpenAI response:", data); // ✅ Te ayudará a debuggear
+    console.log(data); // ✅ Útil para debug
 
-    res.json({
-      response: data.choices[0].message.content.trim(),
-    });
+    res.json({ response: data.choices[0].message.content });
   } catch (error) {
-    console.error("❌ Error OpenAI:", error?.response?.data || error.message);
+    console.error('Error en la solicitud a OpenAI:', error);
     res.status(500).json({
-      error: "Respuesta inválida de OpenAI. Verifica tu API key o la solicitud enviada.",
+      error: 'Respuesta inválida de OpenAI. Verifica tu API key o la solicitud enviada.'
     });
   }
 });
 
-// Iniciar servidor
-app.listen(port, () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${port}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en puerto ${PORT}`);
 });
